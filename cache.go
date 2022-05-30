@@ -2,22 +2,55 @@ package cache
 
 import "time"
 
+func (c Cache) clear() Cache {
+	for key, value := range c.Data {
+		if time.Now().After(value.Deadline) {
+			delete(c.Data, key)
+		}
+	}
+	return c
+}
+
 type Cache struct {
+	Data map[string]Data
+}
+
+type Data struct {
+	Value    string
+	Deadline time.Time
 }
 
 func NewCache() Cache {
-	return Cache{}
+	d := make(map[string]Data)
+	return Cache{Data: d}
 }
 
-func (receiver) Get(key string) (string, bool) {
-
+func (c Cache) Get(key string) (string, bool) {
+	c = c.clear()
+	value, ok := c.Data[key]
+	return value.Value, ok
 }
 
-func (receiver) Put(key, value string) {
+func (c Cache) Put(key, value string) {
+	c = c.clear()
+	d := Data{Value: value, Deadline: time.Now().Add(10 * time.Minute)}
+	c.Data[key] = d
 }
 
-func (receiver) Keys() []string {
+func (c Cache) Keys() []string {
+	c = c.clear()
+	keys := []string{}
+	now := time.Now()
+	for key, data := range c.Data {
+		if now.Before(data.Deadline) {
+			keys = append(keys, key)
+		}
+	}
+	return keys
 }
 
-func (receiver) PutTill(key, value string, deadline time.Time) {
+func (c Cache) PutTill(key, value string, deadline time.Time) {
+	c = c.clear()
+	d := Data{Value: value, Deadline: deadline}
+	c.Data[key] = d
 }
